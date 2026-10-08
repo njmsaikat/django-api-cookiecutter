@@ -1,0 +1,24 @@
+{
+    "project_name": "My API",
+    "project_slug": "{{ cookiecutter.project_name.lower().strip().replace(' ', '-').replace('_', '-') }}",
+    "description": "Backend service built with Django REST Framework.",
+    "author_name": "Your Name",
+    "author_email": "you@example.com",
+    "port": "8020",
+    "python_version": ["3.12", "3.13", "3.11", "3.10"],
+    "timezone": "UTC",
+    "db_name": "{{ cookiecutter.project_slug.replace('-', '_') }}",
+    "use_celery": ["y", "n"],
+    "use_redis": ["y", "n"],
+    "use_nginx": ["y", "n"],
+    "use_sentry": ["y", "n"],
+    "use_s3": ["y", "n"],
+    "use_api_key": ["y", "n"],
+    "git_init": ["y", "n"],
+    "__redis": "{% if cookiecutter.use_redis == 'y' or cookiecutter.use_celery == 'y' %}y{% else %}n{% endif %}",
+    "__api_key_header": "X-{{ cookiecutter.project_slug.upper() }}-API-KEY",
+    "_copy_without_render": [
+        "*app_template/*",
+        ".github/*"
+    ]
+}

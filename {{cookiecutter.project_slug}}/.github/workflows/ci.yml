@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, experimental]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev_settings
+      DJANGO_SECRET_KEY: ci-secret-key
+      JWT_SECRET_KEY: ci-jwt-secret
+      DEBUG: "1"
+      ALLOWED_HOSTS: localhost
+      ALLOWED_ORIGINS: http://localhost
+      DB_CONNECTION: postgres://postgres:postgres@localhost:5432/ci
+      REDIS_CONNECTION: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements/*.txt
+      - run: pip install -r backend/requirements/dev.txt
+      - name: Lint
+        working-directory: backend
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Django checks
+        working-directory: backend
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Tests
+        working-directory: backend
+        run: python manage.py test

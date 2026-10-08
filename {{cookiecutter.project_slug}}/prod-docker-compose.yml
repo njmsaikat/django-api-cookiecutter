@@ -1,0 +1,118 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    container_name: db_{{ cookiecutter.project_slug }}_prod
+    env_file:
+      - ./.env/prod.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - main
+{% if cookiecutter.__redis == "y" %}
+  redis:
+    image: redis:7.4-alpine
+    restart: always
+    container_name: redis_{{ cookiecutter.project_slug }}_prod
+    env_file:
+      - ./.env/prod.env
+    command: sh -c "redis-server --save 20 1 --loglevel warning --requirepass $${REDIS_PWD}"
+    networks:
+      - main
+{% endif %}
+  backend:
+    restart: always
+    container_name: backend_{{ cookiecutter.project_slug }}_prod
+    build:
+      context: .
+      network: host
+      dockerfile: ./docker/prod/Dockerfile
+    command: >
+      sh -c "cd /app/backend &&
+      python manage.py wait_for_db &&
+      python manage.py collectstatic --noinput &&
+      gunicorn config.wsgi:application -c config/gunicorn_conf.py"
+    volumes:
+      - log:/app/backend/media/log
+    depends_on:
+      db:
+        condition: service_healthy
+{% if cookiecutter.__redis == "y" %}      redis:
+        condition: service_started
+{% endif %}    env_file:
+      - ./.env/base.env
+      - ./.env/prod.env
+{% if cookiecutter.use_nginx != "y" %}    ports:
+      - 127.0.0.1:{{ cookiecutter.port|int + 1 }}:{{ cookiecutter.port }}
+{% endif %}    networks:
+      - main
+{% if cookiecutter.use_celery == "y" %}
+  celery:
+    restart: always
+    container_name: celery_{{ cookiecutter.project_slug }}_prod
+    build:
+      context: .
+      network: host
+      dockerfile: ./docker/prod/Dockerfile
+    command: >
+      sh -c "cd /app/backend &&
+      celery --app=config.celery worker --pool=solo --loglevel=info"
+    volumes:
+      - log:/app/backend/media/log
+      - ./scripts/postgres-backup.sh:/backup.sh
+      - /var/www/backups/{{ cookiecutter.project_slug }}-db:/var/www/backups/production-db
+    env_file:
+      - ./.env/base.env
+      - ./.env/prod.env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - main
+
+  celery-beat:
+    restart: always
+    container_name: celery_beat_{{ cookiecutter.project_slug }}_prod
+    build:
+      context: .
+      network: host
+      dockerfile: ./docker/prod/Dockerfile
+    command: >
+      sh -c "cd /app/backend &&
+      rm -f celerybeat-schedule &&
+      celery --app=config.celery beat --loglevel=info --pidfile="
+    volumes:
+      - log:/app/backend/media/log
+    env_file:
+      - ./.env/base.env
+      - ./.env/prod.env
+    depends_on:
+      - backend
+      - celery
+    networks:
+      - main
+{% endif %}{% if cookiecutter.use_nginx == "y" %}
+  nginx:
+    restart: always
+    image: nginx:1.28
+    container_name: nginx_{{ cookiecutter.project_slug }}_prod
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+    depends_on:
+      - backend
+    ports:
+      - 127.0.0.1:{{ cookiecutter.port|int + 1 }}:{{ cookiecutter.port }}
+    networks:
+      - main
+{% endif %}
+networks:
+  main:
+
+volumes:
+  log:
+  pgdata:

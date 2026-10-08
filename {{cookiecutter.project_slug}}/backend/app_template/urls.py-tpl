@@ -1,0 +1,5 @@
+from django.urls import path  # noqa: F401
+
+urlpatterns = [
+    # http://localhost:<port>/api/v1/{{ app_name|slugify }}/
+]

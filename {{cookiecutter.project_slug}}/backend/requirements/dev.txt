@@ -1,0 +1,11 @@
+-r base.txt
+
+# API docs (served only when DEBUG=1)
+drf-spectacular>=0.28,<0.30
+
+# Debugging
+django-debug-toolbar>=5.0,<6
+
+# Lint / format / hooks
+ruff>=0.9
+pre-commit>=4.0

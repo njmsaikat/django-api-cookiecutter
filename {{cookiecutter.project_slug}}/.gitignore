@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtualenvs
+venv/
+.venv/
+
+# Env files: only base.env and *.example are committed
+.env/dev.env
+.env/test.env
+.env/prod.env
+
+# Django
+backend/media/
+backend/static/
+backend/celerybeat-schedule*
+*.sqlite3
+
+# Backups
+backups/
+
+# Editors / OS
+.idea/
+.DS_Store
+.vscode/*
+!.vscode/settings.json

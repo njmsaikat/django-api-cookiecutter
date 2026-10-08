@@ -1,0 +1,13 @@
+-r base.txt
+
+# WSGI server
+gunicorn>=23.0,<24
+
+# Static files (Django admin) without nginx
+whitenoise>=6.9,<7
+
+django-cors-headers>=4.7,<5
+{% if cookiecutter.use_sentry == "y" %}
+# Error reporting
+sentry-sdk>=2.20,<3
+{% endif %}

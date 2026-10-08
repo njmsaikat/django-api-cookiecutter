@@ -1,0 +1,5 @@
+from django.db import models  # noqa: F401
+
+from utils.models import CommonInfo  # noqa: F401  (or TimeStamp)
+
+# Create your models here.
